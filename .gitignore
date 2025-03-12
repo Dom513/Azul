@@ -1,2 +1,2 @@
-/buildozer
-/bin
+.buildozer/
+bin/
