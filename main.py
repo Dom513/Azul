@@ -36,7 +36,7 @@ while app_open:
         game_state.new_menu = False
 
         while game_state.menu_running:
-            pygame.time.Clock().tick(60)  # Limit frame rate to 60 FPS
+            pygame.time.Clock().tick(30)  # Limit frame rate to 60 FPS
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -68,7 +68,7 @@ while app_open:
         game_state.new_settings = False
 
         while game_state.settings_running:
-            pygame.time.Clock().tick(60)  # Limit frame rate to 60 FPS
+            pygame.time.Clock().tick(30)  # Limit frame rate to 60 FPS
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -159,7 +159,7 @@ while app_open:
         local_multiplayer_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
             
         while game_state.local_multiplayer_running:
-            pygame.time.Clock().tick(60)  # Limit frame rate to 60 FPS
+            pygame.time.Clock().tick(30)  # Limit frame rate to 60 FPS
             if new_round["running"]:
                 if not new_round["game_created"]:
                     game_boards, factories, pot, game_info = create_game(game_state, game_boards=game_boards, game_info=game_info, new_round=new_round)
@@ -297,7 +297,7 @@ while app_open:
             game_state.single_player_running = False
             
         while game_state.single_player_running:
-            pygame.time.Clock().tick(60)  # Limit frame rate to 60 FPS
+            pygame.time.Clock().tick(30)  # Limit frame rate to 60 FPS
             if new_round["running"]:
                 if not new_round["game_created"]:
                     game_boards, factories, pot, game_info = create_game(game_state, game_boards=game_boards, game_info=game_info, new_round=new_round)

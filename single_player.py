@@ -497,7 +497,7 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
     if event.type == pygame.FINGERMOTION:
         event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         if game_info["dragged_tiles"] != []:
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = event.pos
             current_game_board = next((g for g in game_boards if g.player_pos == 1), None)
             if current_game_board.image.get_rect().collidepoint(event.pos): #if hovering over game_board
                 for i, tile in enumerate(game_info["dragged_tiles"]):

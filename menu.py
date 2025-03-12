@@ -1,7 +1,7 @@
 import pygame
 import random
 from pygame.locals import *
-from globals import Button, tile_images, base_path
+from globals import Button, large_tile_images, base_path
 
 # Images
 title = pygame.image.load(base_path / 'resources' / "title.png")
@@ -41,14 +41,14 @@ def create_menu(game_state):
                                         settings_image, settings_clicked,
                                         action=to_settings)
 
-    tile_1 = Button(button_height,  (screen_width*0.97,screen_height*0.45),     random.choice(list(tile_images.values())))
-    tile_2 = Button(button_height,  (screen_width*0.85,screen_height*0.83),     random.choice(list(tile_images.values())))
-    tile_3 = Button(button_height,  (screen_width*0.03,screen_height*0.15),     random.choice(list(tile_images.values())))
-    tile_4 = Button(button_height,  (screen_width*0.42,screen_height*0.95),     random.choice(list(tile_images.values())))
-    tile_5 = Button(button_height,  (screen_width*0.1,screen_height*0.7),       random.choice(list(tile_images.values())))
-    tile_6 = Button(button_height,  (screen_width*0.98,screen_height*0.02),     random.choice(list(tile_images.values())))
-    tile_7 = Button(button_height,  (screen_width*0.2,screen_height*0.18),     random.choice(list(tile_images.values())))
-    tile_8 = Button(button_height,  (screen_width*0.8,screen_height*0.18),     random.choice(list(tile_images.values())))
+    tile_1 = Button(button_height,  (screen_width*0.97,screen_height*0.45),     random.choice(list(large_tile_images.values())))
+    tile_2 = Button(button_height,  (screen_width*0.85,screen_height*0.83),     random.choice(list(large_tile_images.values())))
+    tile_3 = Button(button_height,  (screen_width*0.03,screen_height*0.15),     random.choice(list(large_tile_images.values())))
+    tile_4 = Button(button_height,  (screen_width*0.42,screen_height*0.95),     random.choice(list(large_tile_images.values())))
+    tile_5 = Button(button_height,  (screen_width*0.1,screen_height*0.7),       random.choice(list(large_tile_images.values())))
+    tile_6 = Button(button_height,  (screen_width*0.98,screen_height*0.02),     random.choice(list(large_tile_images.values())))
+    tile_7 = Button(button_height,  (screen_width*0.2,screen_height*0.18),     random.choice(list(large_tile_images.values())))
+    tile_8 = Button(button_height,  (screen_width*0.8,screen_height*0.18),     random.choice(list(large_tile_images.values())))
 
     buttons = [single_player_button, local_multiplayer_button, settings_button,
                tile_1, tile_2, tile_3, tile_4, tile_5, tile_6, tile_7, tile_8]

@@ -20,10 +20,11 @@ class GlobalState:
         self.min_screen_ratio = 1.85
         self.max_screen_ratio = 2.25
         self.default_screen_ratio = 2.1
-        self.screen_height = 300
-        self.screen_width = self.screen_height * self.default_screen_ratio
+        info = pygame.display.Info()  # Get screen info
+        self.screen_height = info.current_h
+        self.screen_width = info.current_w
         self.large_tile_height_multiplier = 1/25
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), RESIZABLE)
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
         self.font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", 24)
         self.new_menu=True
         self.new_settings=False
@@ -37,6 +38,11 @@ game_state = GlobalState()
 
 
 # Images
+red_tile_large = pygame.image.load(base_path / 'resources' / "red_tile_large.png")
+blue_tile_large = pygame.image.load(base_path / 'resources' / "blue_tile_large.png")
+yellow_tile_large = pygame.image.load(base_path / 'resources' / "yellow_tile_large.png")
+green_tile_large = pygame.image.load(base_path / 'resources' / "green_tile_large.png")
+purple_tile_large = pygame.image.load(base_path / 'resources' / "purple_tile_large.png")
 red_tile = pygame.image.load(base_path / 'resources' / "red_tile.png")
 blue_tile = pygame.image.load(base_path / 'resources' / "blue_tile.png")
 yellow_tile = pygame.image.load(base_path / 'resources' / "yellow_tile.png")
@@ -60,6 +66,7 @@ popup_dark = pygame.image.load(base_path / 'resources' / "popup_dark.png")
 popup_light = pygame.image.load(base_path / 'resources' / "popup_light.png")
 
 tile_images = {"r":red_tile, "b": blue_tile, "y": yellow_tile, "g": green_tile, "p": purple_tile}
+large_tile_images = {"r":red_tile_large, "b": blue_tile_large, "y": yellow_tile_large, "g": green_tile_large, "p": purple_tile_large}
 
 two_players_mul = pygame.image.load(base_path / 'resources' / "two_players.png")
 two_players_mul_clicked = pygame.image.load(base_path / 'resources' / "two_players_clicked.png")
@@ -486,7 +493,7 @@ class Button:
 
     def generate_shadow(self):
         self.shadow = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
-        pygame.draw.rect(self.shadow, (0,0,0,150), self.shadow.get_rect(), border_radius=int(self.size/10) )       
+        pygame.draw.rect(self.shadow, (0,0,0,170), self.shadow.get_rect(), border_radius=int(self.size/10) )       
         self.rotated_shadow = pygame.transform.rotate(self.shadow, self.angle)
 
     def generate_glow(self):
@@ -502,10 +509,11 @@ class Button:
 #####################
 
 def resize(event):
-    game_state.screen_height = event.h
-    game_state.screen_width = min(game_state.max_screen_ratio, max(game_state.min_screen_ratio, (event.w / event.h))) * event.h
+    info = pygame.display.Info()  # Get screen info
+    game_state.screen_height = info.current_h
+    game_state.screen_width = info.current_w
     if (game_state.screen_width, game_state.screen_height) != event.size:
-        game_state.screen = pygame.display.set_mode((game_state.screen_width, game_state.screen_height), RESIZABLE)
+        game_state.screen = pygame.display.set_mode((game_state.screen_width, game_state.screen_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
     try:
         game_state.large_tile_height = game_state.screen_width * game_state.large_tile_height_multiplier
         game_state.small_tile_height = game_state.large_tile_height * game_state.small_tile_height_multiplier
@@ -549,7 +557,7 @@ def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, 
 
         game_state.screen.blit(game_state.background, (0,0))
         draw_game(game_state.screen, game_boards, factories, pot, buttons, game_info)
-        pygame.display.update()
+        pygame.display.flip()
         pygame.time.delay(10)
     
     for i, object in enumerate(objects_to_move):
@@ -557,7 +565,7 @@ def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, 
 
     game_state.screen.blit(game_state.background, (0,0))
     draw_game(game_state.screen, game_boards, factories, pot, buttons, game_info)
-    pygame.display.update()
+    pygame.display.flip()
 
 def calculate_tile_score(after, coord):
     x,y = coord
@@ -1021,7 +1029,7 @@ def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_
         screen.blit(factory.image, (left,top))
     pot.draw(screen)
     text_center = game_state.screen_width*0.725
-    round_text = f"Round {game_info["round"]}"
+    round_text = f"Round {game_info['round']}"
     round_pos = (text_center, game_state.screen_height*0.4)
     player_cols = ["#0096F0", "red", "#00A43E", "#AF4CF2"] if game_state.mode=="dark" else ["#1C0074", "#CC0000", "#006600", "#740077"]
     if game_mode == "single":
@@ -1031,10 +1039,10 @@ def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_
             if len(game_boards) == 2:
                 first_player_text = f"CPU goes first"
             else:
-                first_player_text = f"CPU {game_info["next_first_player"]-1} goes first"
+                first_player_text = f"CPU {game_info['next_first_player']-1} goes first"
     else:
         #first_player_text = f"Player {game_info["next_first_player"]} goes first"
-        first_player_text = f"{game_state.player_names[game_info["next_first_player"]-1]} goes first"
+        first_player_text = f"{game_state.player_names[game_info['next_first_player']-1]} goes first"
     first_player_pos = (text_center, game_state.screen_height*0.56)
     first_player_col = player_cols[game_info["next_first_player"]-1]
     texts = [(round_text,round_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//7), game_state.text_col), 
