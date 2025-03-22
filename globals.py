@@ -4,6 +4,8 @@ import sys
 import math
 from pygame.locals import *
 from pathlib import Path
+import os
+import platform
 
 
 # Determine if the app is running as a packaged executable or as a script
@@ -12,19 +14,33 @@ if getattr(sys, 'frozen', False):  # If running as an executable
 else:
     base_path = Path(__file__).parent  # Path to the current script
 
+
+def detect_os():
+    if "ANDROID_STORAGE" in os.environ:
+        return "Android"
+    elif platform.system() == "Windows":
+        return "Windows"
+    else:
+        return "Unknown OS"
+
+
 # Setup global game info
 class GlobalState:
     def __init__(self):
+        self.platform = detect_os()
         self.mode = "light"
         self.difficulty = "easy"
         self.min_screen_ratio = 1.85
         self.max_screen_ratio = 2.25
         self.default_screen_ratio = 2.1
         info = pygame.display.Info()  # Get screen info
-        self.screen_height = info.current_h
-        self.screen_width = info.current_w
+        self.screen_height = int(info.current_h*0.6)
+        self.screen_width = int(info.current_w*0.7)
         self.large_tile_height_multiplier = 1/25
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
+        if self.platform == "Android":
+            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
+        elif self.platform == "Windows":
+            self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
         self.font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", 24)
         self.new_menu=True
         self.new_settings=False
@@ -105,6 +121,7 @@ class Tile:
         self.top_left = top_left
         self.image = pygame.transform.smoothscale(self.original_image, (height, height))
         self.rect = self.image.get_rect(topleft = top_left)
+        self.larger_rect = pygame.Rect(self.rect[0]-self.rect[2], self.rect[1]-self.rect[3], self.rect[2]*3, self.rect[3]*3)
         self.glow = pygame.Surface((self.height*30/25, self.height*30/25), pygame.SRCALPHA)       
 
     def draw(self, screen, glow=False):
@@ -120,6 +137,7 @@ class Tile:
             self.glow = pygame.Surface((self.height*30/25, self.height*30/25), pygame.SRCALPHA)  
         self.top_left = top_left
         self.rect = self.image.get_rect(topleft = top_left)
+        self.larger_rect = pygame.Rect(self.rect[0]-self.rect[2], self.rect[1]-self.rect[3], self.rect[2]*3, self.rect[3]*3)
 
     def is_clicked(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
@@ -131,6 +149,7 @@ class Factory:
         self.center = center
         self.radius = game_state.large_tile_height*2.8
         self.image = pygame.transform.smoothscale(self.original_image, (self.radius, self.radius))
+        self.rect = self.image.get_rect(center=self.center)
         self.generate_coords()
         if tiles == None:
             self.tiles = [Tile(random.choice(list(tile_images.items())), game_state.large_tile_height, self.coords[i]) for i in range(4)]
@@ -156,6 +175,7 @@ class Factory:
 class Pot:
     def __init__(self, center, tiles=None):
         self.center = center
+        self.rect = [self.center[0]-game_state.screen_width/6.25, self.center[1]-game_state.screen_width/6.25, game_state.screen_width/3.125, game_state.screen_width/3.125]
         self.generate_coords()
         self.order_coords()
         if tiles == None:
@@ -277,9 +297,9 @@ class Gameboard:
         size_multiplier =  desired_height / self.original_dimensions[1]
         self.dimensions = tuple(dimension*size_multiplier for dimension in self.original_dimensions)
         self.height = self.dimensions[1]
-        if self.top_left[0] + self.dimensions[0] > game_state.screen_width-10:
+        if self.top_left[0] + self.dimensions[0] > game_state.screen_width*0.98:
             height_to_width_ratio = self.dimensions[1]/self.dimensions[0]
-            self.get_dimensions(height_limit = (game_state.screen_width-10-self.top_left[0])*height_to_width_ratio)
+            self.get_dimensions(height_limit = (game_state.screen_width*0.98-self.top_left[0])*height_to_width_ratio)
 
     def snap(self, tile_height, top_left):
         self.top_left = top_left
@@ -378,7 +398,7 @@ class Tower:
         self.snap(self.height, self.top_left)
 
     def draw(self, screen):
-        colours = [(255,0,0,100), (0,0,255,100), (0,255,0,100), (0,255,255,100)]
+        colours = [(255,0,0,100), (0,0,255,100), (255,209,125,100), (0,255,255,100)]
         #pygame.draw.rect(screen, colours[self.player-1], self.rect)
         for tile in self.tiles:
             tile.draw(screen)
@@ -509,24 +529,38 @@ class Button:
 #####################
 
 def resize(event):
-    info = pygame.display.Info()  # Get screen info
-    game_state.screen_height = info.current_h
-    game_state.screen_width = info.current_w
-    if (game_state.screen_width, game_state.screen_height) != event.size:
-        game_state.screen = pygame.display.set_mode((game_state.screen_width, game_state.screen_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
+    game_state.screen_width = event.w
+    game_state.screen_height = event.h
+    game_state.screen = pygame.display.set_mode((game_state.screen_width, game_state.screen_height), pygame.RESIZABLE)
     try:
         game_state.large_tile_height = game_state.screen_width * game_state.large_tile_height_multiplier
         game_state.small_tile_height = game_state.large_tile_height * game_state.small_tile_height_multiplier
     except:
         pass
 
+
 def get_background():
-    if game_state.mode == "light":
-        game_state.background = pygame.transform.smoothscale(background_light, (game_state.screen_width, game_state.screen_height))
-        game_state.text_col = "#300000"
-    else:
-        game_state.background = pygame.transform.smoothscale(background_dark, (game_state.screen_width, game_state.screen_height))
-        game_state.text_col = "#FFE4B3"
+    if game_state.platform == "Android":
+        if game_state.mode == "light":
+            game_state.background_col=(255,209,125)
+            game_state.text_col = "#300000"
+        else:
+            game_state.background_col=(90,40,0)
+            game_state.text_col = "#FFE4B3"
+    elif game_state.platform == "Windows":
+        if game_state.mode == "light":
+            game_state.background = background_light
+            game_state.text_col = "#300000"
+        else:
+            game_state.background = background_dark
+            game_state.text_col = "#FFE4B3"
+
+
+def blit_background():
+    if game_state.platform == "Android":
+        game_state.screen.fill(game_state.background_col)
+    elif game_state.platform == "Windows":
+        game_state.screen.blit(game_state.background, (0,0))
 
 
 def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, buttons, game_info, speed=None):
@@ -545,7 +579,8 @@ def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, 
                 top = object.top_left[1] - component_distances[i][1] * speed[i]/distances[i] * 3
                 height = start_heights[i] + (1-distances[i]/start_distances[i])*(new_heights[i]-start_heights[i])
                 top_left = (left,top)
-                object.snap(height, top_left)
+                if distances[i] >= new_heights[i]/2:
+                    object.snap(height, top_left)
 
                 component_distances = []
                 for i, object in enumerate(objects_to_move):
@@ -555,7 +590,7 @@ def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, 
             else:
                 object.snap(new_heights[i], new_coords[i])
 
-        game_state.screen.blit(game_state.background, (0,0))
+        blit_background()
         draw_game(game_state.screen, game_boards, factories, pot, buttons, game_info)
         pygame.display.flip()
         pygame.time.delay(10)
@@ -563,7 +598,7 @@ def move(objects_to_move, new_coords, new_heights, game_boards, factories, pot, 
     for i, object in enumerate(objects_to_move):
         object.snap(new_heights[i], new_coords[i])
 
-    game_state.screen.blit(game_state.background, (0,0))
+    blit_background()
     draw_game(game_state.screen, game_boards, factories, pot, buttons, game_info)
     pygame.display.flip()
 
@@ -714,23 +749,29 @@ def create_number_of_players(game_state):
     return buttons
 
 def run_number_of_players(game_state, event, buttons):
-    if event.type == pygame.FINGERDOWN:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    update_rect = None
+    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.FINGERDOWN:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 button.shown_image = button.clicked_image
+                update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.FINGERUP:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 try:
                     button.action(game_state)
                 except:
                     pass
-            button.shown_image = button.image
+            if button.shown_image == button.clicked_image:
+                button.shown_image = button.image
+                update_rect = button.rect
 
-    return buttons
+    return buttons, update_rect
 
 
 def draw_number_of_players(game_state, screen, buttons):
@@ -748,9 +789,12 @@ def create_write_names(game_state):
     screen_width = game_state.screen_width
     screen_height = game_state.screen_height
     button_height = screen_height*0.25
-    game_state.player_names = []
-    for i in range(game_state.number_of_players):
-        game_state.player_names.append(f"Player {i+1}")
+    try:
+        game_state.player_names
+    except:
+        game_state.player_names = []
+        for i in range(game_state.number_of_players):
+            game_state.player_names.append(f"Player {i+1}")
 
     play_button = Button(button_height*0.85, (screen_width*0.91,screen_height-screen_width*0.09),
                                         play, play_clicked, action=play_names)
@@ -775,21 +819,27 @@ def create_write_names(game_state):
     return text_rects, buttons
 
 def run_write_names(game_state, event, text_rects, buttons, editing_index):
-    if event.type == pygame.FINGERDOWN:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    update_rect = None
+    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.FINGERDOWN:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 button.shown_image = button.clicked_image
+                update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.FINGERUP:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 try:
                     button.action(game_state)
                 except:
                     pass
-            button.shown_image = button.image
+            if button.shown_image == button.clicked_image:
+                button.shown_image = button.image
+                update_rect = button.rect
         
         for i, rect in enumerate(text_rects):
             if game_state.player_names[i] == "":
@@ -799,24 +849,31 @@ def run_write_names(game_state, event, text_rects, buttons, editing_index):
                 pygame.key.start_text_input()
                 editing_index = i
                 game_state.player_names[i] = ""
+                update_rect = text_rects
                 break
+        
         else:
             pygame.key.stop_text_input()
+            if editing_index != None:
+                update_rect = text_rects[editing_index]
             editing_index = None
 
     if event.type == pygame.KEYDOWN and editing_index is not None:
         if event.key == pygame.K_BACKSPACE and game_state.player_names[editing_index] != "":
             game_state.player_names[editing_index] = game_state.player_names[editing_index][:-1]
+            update_rect = text_rects[editing_index]
         elif event.key == pygame.K_RETURN:
             pygame.key.stop_text_input()
+            update_rect = text_rects[editing_index]
             editing_index = None
         else:
             text_surface = game_state.font.render(game_state.player_names[editing_index], True, game_state.text_col)
             text_rect = text_surface.get_rect(center=text_rects[editing_index].center)
             if text_rect[2] < text_rects[editing_index][2]*0.85:
                 game_state.player_names[editing_index] += event.unicode
+                update_rect = text_rects[editing_index]
                 
-    return buttons, editing_index
+    return buttons, editing_index, update_rect
 
 
 def draw_write_names(game_state, screen, text_rects, buttons, editing_index):
@@ -862,6 +919,8 @@ def rotate_game_boards(game_state, game_boards):
         if game_board.player_pos == 0:
             game_board.player_pos = game_state.number_of_players
         game_board.snap(game_board_new_tile_heights[i], game_board_new_coords[i])
+    update_rect = [pygame.Rect(gb.rect[0]-gb.rect[2]*0.05, gb.rect[1]-gb.rect[3]*0.1, gb.rect[2]*1.1, gb.rect[3]*1.2) for gb in game_boards]
+    return update_rect
 
 def arrange_game_boards(game_boards=None, game_info=None, new_round=None):
     left_anchor = game_state.screen_width*0.475
@@ -902,11 +961,11 @@ def arrange_game_boards(game_boards=None, game_info=None, new_round=None):
             game_info["next_player"] = game_info["next_first_player"]
             if game_state.local_multiplayer_running:
                 while game_boards[game_info["next_first_player"]-1].player_pos != 1:
-                    rotate_game_boards(game_state, game_boards)
+                    update_rect = rotate_game_boards(game_state, game_boards)
         else:
             if game_state.local_multiplayer_running:
                 while game_boards[game_info["next_player"]-1].player_pos != 1:
-                    rotate_game_boards(game_state, game_boards)
+                    update_rect = rotate_game_boards(game_state, game_boards)
             
     return game_boards, game_info
 
@@ -1018,58 +1077,60 @@ def crop_image_to_octagon(image, rect, cut_size, border_colour=None, border_thic
 
 
 def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_round, game_mode):
-    screen.blit(game_state.background, (0,0))
-    for game_board in game_boards:
-        game_board.draw(screen)
-    for button in buttons:
-        button.draw(screen)
-    for factory in factories:
-        left = factory.center[0] - factory.radius/2
-        top = factory.center[1] - factory.radius/2
-        screen.blit(factory.image, (left,top))
-    pot.draw(screen)
-    text_center = game_state.screen_width*0.725
-    round_text = f"Round {game_info['round']}"
-    round_pos = (text_center, game_state.screen_height*0.4)
-    player_cols = ["#0096F0", "red", "#00A43E", "#AF4CF2"] if game_state.mode=="dark" else ["#1C0074", "#CC0000", "#006600", "#740077"]
-    if game_mode == "single":
-        if game_info["next_first_player"] == 1:
-            first_player_text = "You go first"
-        else:
-            if len(game_boards) == 2:
-                first_player_text = f"CPU goes first"
+    update_rect = None
+    if not new_round["run_once"]:
+        for game_board in game_boards:
+            game_board.draw(screen)
+        for button in buttons:
+            button.draw(screen)
+        for factory in factories:
+            left = factory.center[0] - factory.radius/2
+            top = factory.center[1] - factory.radius/2
+            screen.blit(factory.image, (left,top))
+        pot.draw(screen)
+        text_center = game_state.screen_width*0.725
+        round_text = f"Round {game_info['round']}"
+        round_pos = (text_center, game_state.screen_height*0.4)
+        player_cols = ["#0096F0", "red", "#00A43E", "#AF4CF2"] if game_state.mode=="dark" else ["#1C0074", "#CC0000", "#006600", "#740077"]
+        if game_mode == "single":
+            if game_info["next_first_player"] == 1:
+                first_player_text = "You go first"
             else:
-                first_player_text = f"CPU {game_info['next_first_player']-1} goes first"
-    else:
-        #first_player_text = f"Player {game_info["next_first_player"]} goes first"
-        first_player_text = f"{game_state.player_names[game_info['next_first_player']-1]} goes first"
-    first_player_pos = (text_center, game_state.screen_height*0.56)
-    first_player_col = player_cols[game_info["next_first_player"]-1]
-    texts = [(round_text,round_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//7), game_state.text_col), 
-            (first_player_text,first_player_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//11), first_player_col)]
-    # show popup
-    popup_width = max([font.render(message, True, game_state.text_col).get_rect()[2] for message,_,font,_ in texts + [(f"Player goes first",first_player_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//11), game_state.text_col)]])*1.1
-    popup_height = (max([font.render(message, True, game_state.text_col).get_rect(center=pos)[1] for message,pos,font,_ in texts])
-                    - min([font.render(message, True, game_state.text_col).get_rect(center=pos)[1] for message,pos,font,_ in texts])
-                    + texts[1][2].render(round_text, True, game_state.text_col).get_rect(center=round_pos)[3])*1.17
-    popup_left = text_center - popup_width/2
-    popup_top = game_state.screen_height*0.475 - popup_height/2
-    popup_rect = pygame.Rect((int(popup_left), int(popup_top), int(popup_width), int(popup_height)))
-    
-    cut_size = int(popup_height*0.15)
-    border_radius = int(popup_height*0.07)
-    popup = popup_dark if game_state.mode == "dark" else popup_light
-    border_colour = "darkblue" if game_state.mode == "light" else "#D66600"
-    # Crop the image to an octagon and add a border
-    octagon_image = crop_image_to_octagon(popup, popup_rect, cut_size, border_colour, border_radius)
-    # Draw the image
-    screen.blit(octagon_image, (popup_rect[0] - border_radius, popup_rect[1] - border_radius))
-    # show texts
-    for message, pos, font, col in texts:
-        text = font.render(message, True, col)
-        text_pos = text.get_rect(center=pos)
-        screen.blit(text, text_pos)
-    game_state.font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", 24)
+                if len(game_boards) == 2:
+                    first_player_text = f"CPU goes first"
+                else:
+                    first_player_text = f"CPU {game_info['next_first_player']-1} goes first"
+        else:
+            #first_player_text = f"Player {game_info["next_first_player"]} goes first"
+            first_player_text = f"{game_state.player_names[game_info['next_first_player']-1]} goes first"
+        first_player_pos = (text_center, game_state.screen_height*0.56)
+        first_player_col = player_cols[game_info["next_first_player"]-1]
+        texts = [(round_text,round_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//7), game_state.text_col), 
+                (first_player_text,first_player_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//11), first_player_col)]
+        # show popup
+        popup_width = max([font.render(message, True, game_state.text_col).get_rect()[2] for message,_,font,_ in texts + [(f"Player goes first",first_player_pos,pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//11), game_state.text_col)]])*1.1
+        popup_height = (max([font.render(message, True, game_state.text_col).get_rect(center=pos)[1] for message,pos,font,_ in texts])
+                        - min([font.render(message, True, game_state.text_col).get_rect(center=pos)[1] for message,pos,font,_ in texts])
+                        + texts[1][2].render(round_text, True, game_state.text_col).get_rect(center=round_pos)[3])*1.17
+        popup_left = text_center - popup_width/2
+        popup_top = game_state.screen_height*0.475 - popup_height/2
+        popup_rect = pygame.Rect((int(popup_left), int(popup_top), int(popup_width), int(popup_height)))
+        
+        cut_size = int(popup_height*0.15)
+        border_radius = int(popup_height*0.07)
+        popup = popup_dark if game_state.mode == "dark" else popup_light
+        border_colour = "darkblue" if game_state.mode == "light" else "#D66600"
+        # Crop the image to an octagon and add a border
+        octagon_image = crop_image_to_octagon(popup, popup_rect, cut_size, border_colour, border_radius)
+        # Draw the image
+        screen.blit(octagon_image, (popup_rect[0] - border_radius, popup_rect[1] - border_radius))
+        # show texts
+        for message, pos, font, col in texts:
+            text = font.render(message, True, col)
+            text_pos = text.get_rect(center=pos)
+            screen.blit(text, text_pos)
+        game_state.font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", 24)
+        update_rect = pygame.Rect(0,0,game_state.screen_width, game_state.screen_height)
 
     if new_round["current"] - new_round["start"] > 200:
         for f, factory in enumerate(factories):
@@ -1077,18 +1138,25 @@ def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_
                 for t, tile in enumerate(factory.tiles):
                     if new_round["current"] - new_round["start"] > 200 + (2000//len(factories))*f + (2000//(len(factories)*6))*t:
                         tile.draw(screen)
+                        update_rect = tile.larger_rect
 
-    if new_round["current"] - new_round["start"] > 200 + 2300:
+    if new_round["current"] - new_round["start"] > 200 + 2200:
+        update_rect = pygame.Rect(game_state.screen_width*0.4,0,game_state.screen_width*0.6, game_state.screen_height)
         new_round["running"] = False
         new_round["cpu"] = True
+        blit_background()
+        draw_game(screen, game_boards, factories, pot, buttons, game_info, None, [])
+        game_state.screen.blit(screen, (0,0))
+        pygame.display.update(update_rect)
 
-    return new_round
+    new_round["run_once"] = True
+    return new_round, update_rect
 
 
 def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_mode):
     game_over["running"] = False
     winner = game_boards[[g.score for g in game_boards].index(max([g.score for g in game_boards]))]
-    screen.blit(game_state.background, (0,0))
+    #screen.fill(game_state.background_col)
     for game_board in game_boards:
         game_board.draw(screen)
 
@@ -1195,5 +1263,7 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
 
     for button in buttons[1:]:
         button.draw(screen)
+    
+    #game_over["show_results"] = False
 
-    return game_over, buttons
+    return game_over, buttons, pygame.Rect(0,0,game_state.screen_height, game_state.screen_width*0.6)

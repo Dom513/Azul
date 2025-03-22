@@ -138,16 +138,18 @@ class MCTS:
                 if event.type == pygame.QUIT:
                     game_state.single_player_running = False
 
-                if event.type == VIDEORESIZE:
+                if event.type == VIDEORESIZE or VIDEOEXPOSE:
                     return event
 
-                if event.type == pygame.FINGERDOWN:
-                    event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+                if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.type == pygame.FINGERDOWN:
+                        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
                         if button.rect.collidepoint(event.pos):
                             button.shown_image = button.clicked_image
-                if event.type == pygame.FINGERUP:
-                    event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+                if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+                    if event.type == pygame.FINGERUP:
+                        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
                         if button.rect.collidepoint(event.pos):
                             try:
@@ -277,6 +279,8 @@ def print_move(move, player):
 
 
 def make_computer_move(next_player, game_boards, factories, pot, game_state, game_info, single_player_buttons, current, start, player_moved, i, single_player_screen):
+    if not start:
+        start = pygame.time.get_ticks()
     move_found = False
     while not move_found:
         copy_game_boards = [[[t.colour if t else "-" for t in row] for row in game_board.tiles] for game_board in game_boards]
@@ -294,7 +298,7 @@ def make_computer_move(next_player, game_boards, factories, pot, game_state, gam
             get_background()
             game_boards, factories, pot, game_info = create_game(game_state, game_boards, factories, pot, game_info)
             single_player_buttons = [create_number_of_players(game_state)[0]]
-            game_state.screen.blit(game_state.background, (0,0))
+            blit_background()
             draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, None, None)
             game_state.screen.blit(single_player_screen, (0,0))
             pygame.display.update()
@@ -388,11 +392,18 @@ def make_actual_move(game_state, game_info, factory, tiles, game_board, tower, p
 #######################
 
 def run_single_player(game_state, event, game_boards, factories, pot, single_player_buttons, game_info):
+    update_rect = None
     large_tile_height = game_state.large_tile_height
     small_tile_height = game_state.small_tile_height
     
-    if event.type == pygame.FINGERDOWN:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.FINGERDOWN:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+        for button in single_player_buttons:
+            if button.rect.collidepoint(event.pos):
+                button.shown_image = button.clicked_image
+                update_rect = button.rect
+
         for factory in factories + [pot]:
             for tile in factory.tiles:
                 if tile.rect.collidepoint(event.pos):
@@ -402,9 +413,19 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
                     game_info["positions_in_factory"] = [tile.top_left for tile in game_info["dragged_tiles"]]
                     if game_info["dragged_tiles"]:
                         game_info["offsets"] = [(tile.height/2 + tile.height*26/25*i, tile.height/2) for i in range(len(game_info["dragged_tiles"]))]
+                    update_rect = [tile.larger_rect for tile in game_info["dragged_tiles"]] + [factory.rect]
 
-    if event.type == pygame.FINGERUP:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.FINGERUP:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+        for button in single_player_buttons:
+            if button.rect.collidepoint(event.pos):
+                try:
+                    button.action(game_state)
+                except:
+                    pass
+            button.shown_image = button.image
+
         if game_info["dragged_tiles"] != []:
             placed = False
             game_board = [g for g in game_boards if g.player_pos==1][0]
@@ -439,8 +460,10 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
                   
 
             if placed == False:  # if not placed in tower, snap back to factory
+                update_rect = [tile.larger_rect for tile in game_info["dragged_tiles"]]
                 for i, tile in enumerate(game_info["dragged_tiles"]):
                     tile.snap(large_tile_height, game_info["positions_in_factory"][i])
+                update_rect += [tile.larger_rect for tile in game_info["dragged_tiles"]]
             
             else:  # if tiles were placed
                 game_info["next_player"] = current_game_board.player+1
@@ -494,11 +517,13 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
             game_info["offsets"] = []
             
         
-    if event.type == pygame.FINGERMOTION:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERMOTION or event.type == pygame.MOUSEMOTION:
+        if event.type == pygame.FINGERMOTION:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         if game_info["dragged_tiles"] != []:
             mouse_pos = event.pos
             current_game_board = next((g for g in game_boards if g.player_pos == 1), None)
+            update_rects = [tile.larger_rect for tile in game_info["dragged_tiles"]]
             if current_game_board.image.get_rect().collidepoint(event.pos): #if hovering over game_board
                 for i, tile in enumerate(game_info["dragged_tiles"]):
                     tile.height = current_game_board.tile_height
@@ -511,20 +536,27 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
                     game_info["offsets"][i] = (tile.height/2 + tile.height*26/25*i, tile.height/2)
                     new_top_left = (mouse_pos[0]-game_info["offsets"][i][0], mouse_pos[1]-game_info["offsets"][i][1])
                     tile.snap(tile.height, new_top_left)
+            update_rects += [tile.larger_rect for tile in game_info["dragged_tiles"]]
+            update_rect = update_rects[0]
+            for rect in update_rects[1:]:
+                update_rect = update_rect.union(rect)
+            update_rect = update_rect.inflate(200,200)
 
-    return game_boards, factories, pot, single_player_buttons, game_info
+    return game_boards, factories, pot, single_player_buttons, game_info, update_rect
 
 
 def single_player_round_over(game_state, round_over, states, game_boards, factories, pot, single_player_buttons, game_info, new_round):
-
+    game_board = game_boards[round_over["current_player"]-1]  # Access the current player's game_board
+    update_rect = pygame.Rect(game_board.rect[0]-game_board.rect[2]*0.05, game_board.rect[1]-game_board.rect[3]*0.1, game_board.rect[2]*1.1, game_board.rect[3]*1.2)
+    
     if round_over["current_state"] == states["wait"]:
+        update_rect = None
         # Wait for 1 second before starting
         if round_over["current"] - round_over["start"] >= 1000:
             round_over["start"] = round_over["current"]
             round_over["current_state"] = states["score_tower"]
 
     elif round_over["current_state"] == states["score_tower"]:
-        game_board = game_boards[round_over["current_player"]-1]  # Access the current player's game_board
         towers = game_board.towers
         if round_over["current_tower"] < len(towers): # if one of 5 towers
             tower = towers[round_over["current_tower"]]
@@ -613,12 +645,15 @@ def single_player_round_over(game_state, round_over, states, game_boards, factor
             new_round["running"] = True
             new_round["game_created"] = False 
 
-    return round_over, game_boards, factories, pot, single_player_buttons, game_info, new_round
+    return round_over, game_boards, factories, pot, single_player_buttons, game_info, new_round, update_rect
 
 
 def single_player_game_over(game_over, new_round, states, game_boards, game_state):
-
+    game_board = game_boards[game_over["current_player"]-1]  # Access the current player's game_board
+    update_rect = pygame.Rect(game_board.rect[0]-game_board.rect[2]*0.05, game_board.rect[1]-game_board.rect[3]*0.1, game_board.rect[2]*1.1, game_board.rect[3]*1.2)
+    
     if game_over["current_state"] == states["wait"]:
+        update_rect = None
         if game_over["current"] - game_over["start"] >= 500:  # wait 0.5 seconds before starting
             game_over["start"] = game_over["current"]
             game_over["current_state"] = states["score_block"]
@@ -694,5 +729,6 @@ def single_player_game_over(game_over, new_round, states, game_boards, game_stat
             game_over["show_results"] = True
             game_over["running"] = False
             new_round["running"] = False
+            game_over["glowing_done"] = True
 
-    return game_over, new_round
+    return game_over, new_round, update_rect

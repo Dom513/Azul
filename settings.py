@@ -61,24 +61,29 @@ def create_settings(game_state):
 ###################
 
 def run_settings(game_state, event, buttons, texts, title):
-
-    if event.type == pygame.FINGERDOWN:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    update_rect = None
+    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.FINGERDOWN:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 button.shown_image = button.clicked_image
+                update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP:
-        event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
+    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+        if event.type == pygame.FINGERUP:
+            event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
             if button.rect.collidepoint(event.pos):
                 try:
                     button.action(game_state)
                 except:
                     pass
-            button.shown_image = button.image
+            if button.shown_image == button.clicked_image:
+                button.shown_image = button.image
+                update_rect = button.rect
 
-    return buttons, texts, title
+    return buttons, texts, title, update_rect
 
 
 def draw_settings(game_state, screen, buttons, texts, title):
