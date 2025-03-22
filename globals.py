@@ -549,10 +549,10 @@ def get_background():
             game_state.text_col = "#FFE4B3"
     elif game_state.platform == "Windows":
         if game_state.mode == "light":
-            game_state.background = background_light
+            game_state.background = pygame.transform.scale(background_light, (game_state.screen_width, game_state.screen_height))
             game_state.text_col = "#300000"
         else:
-            game_state.background = background_dark
+            game_state.background = pygame.transform.scale(background_dark, (game_state.screen_width, game_state.screen_height))
             game_state.text_col = "#FFE4B3"
 
 

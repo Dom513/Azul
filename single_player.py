@@ -293,15 +293,23 @@ def make_computer_move(next_player, game_boards, factories, pot, game_state, gam
         best_move = mcts.search(root, single_player_buttons, game_state, next_player)
         try:  # if resized
             event = best_move
-            resize(event)
-            single_player_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
-            get_background()
-            game_boards, factories, pot, game_info = create_game(game_state, game_boards, factories, pot, game_info)
-            single_player_buttons = [create_number_of_players(game_state)[0]]
-            blit_background()
-            draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, None, None)
-            game_state.screen.blit(single_player_screen, (0,0))
-            pygame.display.update()
+            if event.type == VIDEORESIZE:
+                resize(event)
+                single_player_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
+                get_background()
+                game_boards, factories, pot, game_info = create_game(game_state, game_boards, factories, pot, game_info)
+                single_player_buttons = [create_number_of_players(game_state)[0]]
+                blit_background()
+                draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, None, None)
+                game_state.screen.blit(single_player_screen, (0,0))
+                pygame.display.update()
+            if event.type == VIDEOEXPOSE:
+                single_player_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
+                get_background()
+                blit_background()
+                draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, None, None)
+                game_state.screen.blit(single_player_screen, (0,0))
+                pygame.display.update()
         except:
             factory_num, factory, tiles, tower_cat, tower = best_move
             try:
