@@ -243,18 +243,14 @@ while app_open:
                     get_background()
                     game_boards, factories, pot, game_info = create_game(game_state, game_boards, factories, pot, game_info)
                     local_multiplayer_buttons = [create_number_of_players(game_state)[0]]
-                    blit_background()
-                    draw_game(local_multiplayer_screen, game_boards, factories, pot, local_multiplayer_buttons, game_info, add_score, glow_tiles)
-                    game_state.screen.blit(local_multiplayer_screen, (0,0))
-                    pygame.display.update()
+                    update_rect = pygame.Rect(0,0, game_state.screen_width, game_state.screen_height)
+                    break
 
                 if event.type == VIDEOEXPOSE:
                     local_multiplayer_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
                     get_background()
-                    blit_background()
-                    draw_game(local_multiplayer_screen, game_boards, factories, pot, local_multiplayer_buttons, game_info, add_score, glow_tiles)
-                    game_state.screen.blit(local_multiplayer_screen, (0,0))
-                    pygame.display.update()
+                    update_rect = pygame.Rect(0,0, game_state.screen_width, game_state.screen_height)
+                    break
                 
                 game_boards, factories, pot, local_multiplayer_buttons, game_info, round_of_turns_start, update_rect_2 = run_local_multiplayer(game_state, event, game_boards, factories, pot, local_multiplayer_buttons, game_info, round_of_turns_start)
                 if isinstance(update_rect_2, list):  # If it's a list of Rects
@@ -319,17 +315,25 @@ while app_open:
                 add_score = None
                 glow_tiles = []
 
-            
+
             if new_round["running"] and new_round["game_created"]:
                 blit_background()
-                new_round, update_rect = draw_new_round(local_multiplayer_screen, game_boards, factories, pot, local_multiplayer_buttons, game_info, new_round, "local")
+                if update_rect == pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                    new_round["run_once"] = False
+                new_round, update_rect_2 = draw_new_round(local_multiplayer_screen, game_boards, factories, pot, local_multiplayer_buttons, game_info, new_round, "local")                
+                if update_rect != pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                    update_rect = update_rect_2
                 game_state.screen.blit(local_multiplayer_screen, (0,0))
                 pygame.display.update(update_rect)
                 update_rect = None
             elif game_over["show_results"]:
                 if not game_over["results_shown_once"] or update_rect:
                     blit_background()
-                    game_over, local_multiplayer_buttons, update_rect = draw_results(local_multiplayer_screen, game_over, game_boards, factories, pot, local_multiplayer_buttons, "local")
+                    if update_rect == pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                        new_round["run_once"] = False
+                    game_over, local_multiplayer_buttons, update_rect_2 = draw_results(local_multiplayer_screen, game_over, game_boards, factories, pot, local_multiplayer_buttons, "local")
+                    if update_rect != pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                        update_rect = update_rect_2
                     game_state.screen.blit(local_multiplayer_screen, (0,0))
                     pygame.display.update(update_rect)
                     update_rect = None
@@ -452,18 +456,14 @@ while app_open:
                     get_background()
                     game_boards, factories, pot, game_info = create_game(game_state, game_boards, factories, pot, game_info)
                     single_player_buttons = [create_number_of_players(game_state)[0]]
-                    blit_background()
-                    draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, add_score, glow_tiles)
-                    game_state.screen.blit(single_player_screen, (0,0))
-                    pygame.display.update()
+                    update_rect = pygame.Rect(0,0,game_state.screen_width, game_state.screen_height)
+                    break
 
                 if event.type == VIDEOEXPOSE:
                     single_player_screen = pygame.Surface((game_state.screen_width, game_state.screen_height), pygame.SRCALPHA)
                     get_background()
-                    blit_background()
-                    draw_game(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, add_score, glow_tiles)
-                    game_state.screen.blit(single_player_screen, (0,0))
-                    pygame.display.update()
+                    update_rect = pygame.Rect(0,0,game_state.screen_width, game_state.screen_height)
+                    break
                 
                 if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
                     if event.type == pygame.FINGERDOWN:
@@ -568,16 +568,25 @@ while app_open:
             
             if new_round["running"] and new_round["game_created"]:
                 blit_background()
-                new_round, update_rect = draw_new_round(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, new_round, "single")
+                if update_rect == pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                    new_round["run_once"] = False
+                new_round, update_rect_2 = draw_new_round(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, new_round, "single")
+                if update_rect != pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                    update_rect = update_rect_2
                 game_state.screen.blit(single_player_screen, (0,0))
                 pygame.display.update(update_rect)
                 update_rect = None
             elif game_over["show_results"]:
                 if not game_over["results_shown_once"] or update_rect:
                     blit_background()
-                    game_over, single_player_buttons, update_rect = draw_results(single_player_screen, game_over, game_boards, factories, pot, single_player_buttons, "single")
+                    if update_rect == pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                        new_round["run_once"] = False
+                    game_over, single_player_buttons, update_rect_2 = draw_results(single_player_screen, game_over, game_boards, factories, pot, single_player_buttons, "single")
+                    if update_rect != pygame.Rect(0,0,game_state.screen_width, game_state.screen_height):
+                        update_rect = update_rect_2
                     game_state.screen.blit(single_player_screen, (0,0))
                     pygame.display.update(update_rect)
+                    game_over["results_shown_once"] = True
                     update_rect = None
             elif update_rect:
                 # Draw game
