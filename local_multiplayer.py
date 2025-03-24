@@ -7,7 +7,7 @@ def run_local_multiplayer(game_state, event, game_boards, factories, pot, local_
     large_tile_height = game_state.large_tile_height
     small_tile_height = game_state.small_tile_height
     
-    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+    if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
         if event.type == pygame.FINGERDOWN:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in local_multiplayer_buttons:
@@ -26,7 +26,7 @@ def run_local_multiplayer(game_state, event, game_boards, factories, pot, local_
                         game_info["offsets"] = [(tile.height/2 + tile.height*26/25*i, tile.height/2) for i in range(len(game_info["dragged_tiles"]))]
                     update_rect = [tile.larger_rect for tile in game_info["dragged_tiles"]] + [factory.rect]
 
-    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+    if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
         if event.type == pygame.FINGERUP:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in local_multiplayer_buttons:
@@ -131,7 +131,7 @@ def run_local_multiplayer(game_state, event, game_boards, factories, pot, local_
             game_info["offsets"] = []
 
         
-    if event.type == pygame.FINGERMOTION or event.type == pygame.MOUSEMOTION:
+    if (event.type==pygame.FINGERMOTION and game_state.platform=="Android") or (event.type==pygame.MOUSEMOTION and game_state.platform=="Windows"):
         if event.type == pygame.FINGERMOTION:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         if game_info["dragged_tiles"] != []:
@@ -266,7 +266,7 @@ def local_multiplayer_round_over(game_state, round_over, states, game_boards, fa
 
 def local_multiplayer_game_over(game_over, new_round, states, game_boards, game_state):
     game_board = game_boards[game_over["current_player"]-1]  # Access the current player's game_board
-    update_rect = pygame.Rect(game_board.rect[0]-game_board.rect[2]*0.05, game_board.rect[1]-game_board.rect[3]*0.1, game_board.rect[2]*1.1, game_board.rect[3]*1.2)
+    update_rect = [pygame.Rect(game_board.rect[0]-game_board.rect[2]*0.05, game_board.rect[1]-game_board.rect[3]*0.1, game_board.rect[2]*1.1, game_board.rect[3]*1.2) for game_board in game_boards]
 
     if game_over["current_state"] == states["wait"]:
         if game_over["current"] - game_over["start"] >= 50:

@@ -141,13 +141,13 @@ class MCTS:
                 if event.type == VIDEORESIZE or VIDEOEXPOSE:
                     return event
 
-                if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
                     if event.type == pygame.FINGERDOWN:
                         event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
                         if button.rect.collidepoint(event.pos):
                             button.shown_image = button.clicked_image
-                if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+                if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
                     if event.type == pygame.FINGERUP:
                         event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
@@ -404,7 +404,7 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
     large_tile_height = game_state.large_tile_height
     small_tile_height = game_state.small_tile_height
     
-    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+    if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
         if event.type == pygame.FINGERDOWN:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in single_player_buttons:
@@ -423,7 +423,7 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
                         game_info["offsets"] = [(tile.height/2 + tile.height*26/25*i, tile.height/2) for i in range(len(game_info["dragged_tiles"]))]
                     update_rect = [tile.larger_rect for tile in game_info["dragged_tiles"]] + [factory.rect]
 
-    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+    if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
         if event.type == pygame.FINGERUP:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in single_player_buttons:
@@ -525,7 +525,7 @@ def run_single_player(game_state, event, game_boards, factories, pot, single_pla
             game_info["offsets"] = []
             
         
-    if event.type == pygame.FINGERMOTION or event.type == pygame.MOUSEMOTION:
+    if (event.type==pygame.FINGERMOTION and game_state.platform=="Android") or (event.type==pygame.MOUSEMOTION and game_state.platform=="Windows"):
         if event.type == pygame.FINGERMOTION:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         if game_info["dragged_tiles"] != []:

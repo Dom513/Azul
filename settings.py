@@ -62,7 +62,7 @@ def create_settings(game_state):
 
 def run_settings(game_state, event, buttons, texts, title):
     update_rect = None
-    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+    if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
         if event.type == pygame.FINGERDOWN:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
@@ -70,7 +70,7 @@ def run_settings(game_state, event, buttons, texts, title):
                 button.shown_image = button.clicked_image
                 update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+    if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
         if event.type == pygame.FINGERUP:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:

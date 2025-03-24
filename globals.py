@@ -215,6 +215,16 @@ class Gameboard:
     def __init__(self, player, top_left, towers=None, tiles=None, player_pos=None, score=0):
         self.player_pos = player_pos if player_pos else player
         self.player = player
+        if game_state.single_player_running:
+            if self.player == 1:
+                self.player_name = "You"
+            else:
+                self.player_name = f"CPU {self.player-1}"
+        else:
+            try:
+                self.player_name = game_state.player_names[self.player-1]
+            except:
+                self.player_name = "Score"
         self.top_left = top_left
         self.score = score
         self.get_dimensions()
@@ -234,12 +244,16 @@ class Gameboard:
     def draw(self, screen, add_score=None, glow_tiles=[]):
         screen.blit(self.image, self.top_left)
         #pygame.draw.rect(screen, "blue", (self.top_left[0], self.top_left[1], self.tile_height*2, self.tile_height*2))
-        text = "Score"
-        score = str(self.score)
+        text = self.player_name
         text_pos = (self.top_left[0], self.top_left[1]-self.tile_height*0.1)
+        text_font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", int(self.tile_height))
+        for i in range(len(text)):
+            text_rect = text_font.render(text, True, game_state.text_col).get_rect(topleft = text_pos)
+            if text_rect[2] > self.dimensions[0]*0.28:
+                text = text[:-1]
+        score = str(self.score)
         score_left = self.top_left[0]-self.tile_height/2 if self.score >= 100 and self.player_pos == 1 else self.top_left[0]
         score_pos = (score_left, self.top_left[1]+self.tile_height*0.6)
-        text_font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", int(self.tile_height))
         score_font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", int(self.tile_height*1.75))
         texts =  [(text, text_pos, text_font), (score, score_pos, score_font)]
         score_rect = score_font.render(score, True, game_state.text_col).get_rect(topleft = score_pos)
@@ -543,22 +557,21 @@ def get_background():
     if game_state.platform == "Android":
         if game_state.mode == "light":
             game_state.background_col=(255,209,125)
-            game_state.text_col = "#300000"
         else:
             game_state.background_col=(90,40,0)
-            game_state.text_col = "#FFE4B3"
-    elif game_state.platform == "Windows":
-        if game_state.mode == "light":
-            game_state.background = pygame.transform.scale(background_light, (game_state.screen_width, game_state.screen_height))
-            game_state.text_col = "#300000"
-        else:
-            game_state.background = pygame.transform.scale(background_dark, (game_state.screen_width, game_state.screen_height))
-            game_state.text_col = "#FFE4B3"
+    
+    if game_state.mode == "light":
+        game_state.background = pygame.transform.scale(background_light, (game_state.screen_width, game_state.screen_height))
+        game_state.text_col = "#300000"
+    else:
+        game_state.background = pygame.transform.scale(background_dark, (game_state.screen_width, game_state.screen_height))
+        game_state.text_col = "#FFE4B3"
 
 
 def blit_background():
     if game_state.platform == "Android":
-        game_state.screen.fill(game_state.background_col)
+        #game_state.screen.fill(game_state.background_col)  # might be better
+        game_state.screen.blit(game_state.background, (0,0))
     elif game_state.platform == "Windows":
         game_state.screen.blit(game_state.background, (0,0))
 
@@ -750,7 +763,7 @@ def create_number_of_players(game_state):
 
 def run_number_of_players(game_state, event, buttons):
     update_rect = None
-    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+    if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
         if event.type == pygame.FINGERDOWN:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
@@ -758,7 +771,7 @@ def run_number_of_players(game_state, event, buttons):
                 button.shown_image = button.clicked_image
                 update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+    if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
         if event.type == pygame.FINGERUP:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
@@ -790,10 +803,14 @@ def create_write_names(game_state):
     screen_height = game_state.screen_height
     button_height = screen_height*0.25
     try:
-        game_state.player_names
+        existing_player_names = game_state.player_names.copy()
     except:
-        game_state.player_names = []
-        for i in range(game_state.number_of_players):
+        pass
+    game_state.player_names = []
+    for i in range(game_state.number_of_players):
+        try:
+            game_state.player_names.append(existing_player_names[i])
+        except:
             game_state.player_names.append(f"Player {i+1}")
 
     play_button = Button(button_height*0.85, (screen_width*0.91,screen_height-screen_width*0.09),
@@ -820,7 +837,7 @@ def create_write_names(game_state):
 
 def run_write_names(game_state, event, text_rects, buttons, editing_index):
     update_rect = None
-    if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+    if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
         if event.type == pygame.FINGERDOWN:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
@@ -828,7 +845,7 @@ def run_write_names(game_state, event, text_rects, buttons, editing_index):
                 button.shown_image = button.clicked_image
                 update_rect = button.rect
                 
-    if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+    if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
         if event.type == pygame.FINGERUP:
             event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
         for button in buttons:
@@ -1079,6 +1096,7 @@ def crop_image_to_octagon(image, rect, cut_size, border_colour=None, border_thic
 def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_round, game_mode):
     update_rect = None
     if not new_round["run_once"]:
+        screen.fill((0,0,0,0))
         for game_board in game_boards:
             game_board.draw(screen)
         for button in buttons:
@@ -1154,9 +1172,9 @@ def draw_new_round(screen, game_boards, factories, pot, buttons, game_info, new_
 
 
 def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_mode):
+    screen.fill((0,0,0,0))
     game_over["running"] = False
     winner = game_boards[[g.score for g in game_boards].index(max([g.score for g in game_boards]))]
-    #screen.fill(game_state.background_col)
     for game_board in game_boards:
         game_board.draw(screen)
 
@@ -1194,12 +1212,12 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
                 else:
                     players_texts.append(f"CPU {i}")
         else:
-            #players_texts.append(f"P{i+1}")
-            text_surface = game_state.font.render(game_state.player_names[i], True, game_state.text_col)
+            score_font = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//10)
+            text_surface = score_font.render(game_state.player_names[i], True, game_state.text_col)
             text_rect = text_surface.get_rect()
-            while text_rect[2] >= popup_width*0.65:
+            while text_rect[2] >= popup_width*0.78:
                 game_state.player_names[i] = game_state.player_names[i][:-1]
-                text_surface = game_state.font.render(game_state.player_names[i], True, game_state.text_col)
+                text_surface = score_font.render(game_state.player_names[i], True, game_state.text_col)
                 text_rect = text_surface.get_rect()
             if text_rect[2] > max_width:
                 max_width = text_rect[2]
@@ -1208,7 +1226,7 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
     if game_mode == "single":
         center = popup_left+popup_width*0.575
     else:
-        center = popup_left+popup_width*0.5 + max_width*0.6
+        center = popup_left+popup_width*0.5 + max_width*0.5
     if game_state.number_of_players == 2:
         scores_poses = [(center,popup_top+popup_height*0.25), (center,popup_top+popup_height*0.45)]
     if game_state.number_of_players == 3:
@@ -1220,7 +1238,7 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
         result_size = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//10)
     else:
         result_size = pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//11)
-    texts = [(result_text, result_pos, result_size, game_state.text_col)]
+    outcome_text = [(result_text, result_pos, result_size, game_state.text_col)]
     player_cols = ["#0096F0", "red", "#00A43E", "#AF4CF2"] if game_state.mode=="dark" else ["#1C0074", "#CC0000", "#006600", "#740077"]
     p_texts = []
     s_texts = []
@@ -1229,7 +1247,7 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
         s_texts.append((scores_texts[i],scores_poses[i],pygame.font.Font(base_path / 'resources' / "boucherie.ttf", game_state.screen_height//10), player_cols[i]))
     # show popup
     cut_size = int(popup_height*0.09)
-    border_radius = int(popup_height*0.045)
+    border_radius = int(popup_height*0.03)
     popup = popup_dark if game_state.mode == "dark" else popup_light
     popup_rect = [popup_left, popup_top, popup_width, popup_height]
     border_colour = "darkblue" if game_state.mode == "light" else "orange"
@@ -1238,7 +1256,7 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
     # Draw the image
     screen.blit(octagon_image, (popup_rect[0] - border_radius, popup_rect[1] - border_radius))
     # show texts
-    for message, pos, font, col in texts:
+    for message, pos, font, col in outcome_text:
         text = font.render(message, True, col)
         text_pos = text.get_rect(center=pos)
         screen.blit(text, text_pos)
@@ -1264,6 +1282,4 @@ def draw_results(screen, game_over, game_boards, factories, pot, buttons, game_m
     for button in buttons[1:]:
         button.draw(screen)
     
-    #game_over["show_results"] = False
-
     return game_over, buttons, pygame.Rect(0,0,game_state.screen_height, game_state.screen_width*0.6)

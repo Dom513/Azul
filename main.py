@@ -175,6 +175,7 @@ while app_open:
                         "game_created": False}
             game_over = {"running": False,
                         "show_results": False,
+                        "results_shown_once": False,
                         "glowing_done": False}
             round_of_turns_start = None
             end_of_round_start = None
@@ -318,7 +319,7 @@ while app_open:
                 add_score = None
                 glow_tiles = []
 
-            #game_over["show_results"] = True
+            
             if new_round["running"] and new_round["game_created"]:
                 blit_background()
                 new_round, update_rect = draw_new_round(local_multiplayer_screen, game_boards, factories, pot, local_multiplayer_buttons, game_info, new_round, "local")
@@ -326,11 +327,13 @@ while app_open:
                 pygame.display.update(update_rect)
                 update_rect = None
             elif game_over["show_results"]:
-                blit_background()
-                game_over, local_multiplayer_buttons, update_rect = draw_results(local_multiplayer_screen, game_over, game_boards, factories, pot, local_multiplayer_buttons, "local")
-                game_state.screen.blit(local_multiplayer_screen, (0,0))
-                pygame.display.update(update_rect)
-                update_rect = None
+                if not game_over["results_shown_once"] or update_rect:
+                    blit_background()
+                    game_over, local_multiplayer_buttons, update_rect = draw_results(local_multiplayer_screen, game_over, game_boards, factories, pot, local_multiplayer_buttons, "local")
+                    game_state.screen.blit(local_multiplayer_screen, (0,0))
+                    pygame.display.update(update_rect)
+                    update_rect = None
+                    game_over["results_shown_once"] = True
             elif update_rect:
                 # Draw game
                 blit_background()
@@ -391,6 +394,7 @@ while app_open:
                          "cpu": False}
             game_over = {"running": False,
                          "show_results": False,
+                         "results_shown_once": False,
                          "glowing_done": False}
             round_of_turns_start = None
             end_of_round_start = None
@@ -461,13 +465,13 @@ while app_open:
                     game_state.screen.blit(single_player_screen, (0,0))
                     pygame.display.update()
                 
-                if event.type == pygame.FINGERDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                if (event.type==pygame.FINGERDOWN and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONDOWN and game_state.platform=="Windows"):
                     if event.type == pygame.FINGERDOWN:
                         event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
                         if button.rect.collidepoint(event.pos):
                             button.shown_image = button.clicked_image
-                if event.type == pygame.FINGERUP or event.type == pygame.MOUSEBUTTONUP:
+                if (event.type==pygame.FINGERUP and game_state.platform=="Android") or (event.type==pygame.MOUSEBUTTONUP and game_state.platform=="Windows"):
                     if event.type == pygame.FINGERUP:
                         event.pos = (int(event.x * game_state.screen_width), int(event.y * game_state.screen_height))
                     for button in single_player_buttons:
@@ -561,7 +565,7 @@ while app_open:
                 add_score = None
                 glow_tiles = []
 
-            #game_over["show_results"] = True
+            
             if new_round["running"] and new_round["game_created"]:
                 blit_background()
                 new_round, update_rect = draw_new_round(single_player_screen, game_boards, factories, pot, single_player_buttons, game_info, new_round, "single")
@@ -569,11 +573,12 @@ while app_open:
                 pygame.display.update(update_rect)
                 update_rect = None
             elif game_over["show_results"]:
-                blit_background()
-                game_over, single_player_buttons, update_rect = draw_results(single_player_screen, game_over, game_boards, factories, pot, single_player_buttons, "single")
-                game_state.screen.blit(single_player_screen, (0,0))
-                pygame.display.update(update_rect)
-                update_rect = None
+                if not game_over["results_shown_once"] or update_rect:
+                    blit_background()
+                    game_over, single_player_buttons, update_rect = draw_results(single_player_screen, game_over, game_boards, factories, pot, single_player_buttons, "single")
+                    game_state.screen.blit(single_player_screen, (0,0))
+                    pygame.display.update(update_rect)
+                    update_rect = None
             elif update_rect:
                 # Draw game
                 blit_background()
