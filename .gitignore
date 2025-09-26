@@ -1,0 +1,7 @@
+resources-old/
+__pycache__/
+.buildozer/
+bin/
+build/
+dist/
+Azul.spec
